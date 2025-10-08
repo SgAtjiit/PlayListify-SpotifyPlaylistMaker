@@ -131,28 +131,45 @@ const Profile = () => {
               </h2>
               <p className="text-gray-400 mb-6">{user.email}</p>
               
-              {/* User Stats */}
-              <div className="grid grid-cols-2 gap-4 mb-6">
-                <div className="bg-gray-700/30 rounded-lg p-3 border border-gray-600/50 hover:bg-gray-700/40 transition-colors">
-                  <div className="text-green-400 font-semibold text-lg">∞</div>
-                  <div className="text-gray-400 text-xs">Playlists</div>
-                </div>
-                <div className="bg-gray-700/30 rounded-lg p-3 border border-gray-600/50 hover:bg-gray-700/40 transition-colors">
-                  <div className="text-green-400 font-semibold text-lg">♪</div>
-                  <div className="text-gray-400 text-xs">Songs Added</div>
-                </div>
+              {/* Spotify Analytics Navigation Cards */}
+              <div className="grid grid-cols-3 gap-3 mb-6">
+                <button
+                  onClick={() => navigate('/top-tracks')}
+                  className="bg-blue-500/20 hover:bg-blue-500/30 rounded-lg p-3 border border-blue-500/30 hover:border-blue-500/50 transition-all duration-200 group"
+                >
+                  <div className="text-blue-400 group-hover:text-blue-300 font-semibold text-lg mb-1">🎵</div>
+                  <div className="text-blue-400 group-hover:text-blue-300 text-xs font-medium">Top Tracks</div>
+                </button>
+                
+                <button
+                  onClick={() => navigate('/top-artists')}
+                  className="bg-purple-500/20 hover:bg-purple-500/30 rounded-lg p-3 border border-purple-500/30 hover:border-purple-500/50 transition-all duration-200 group"
+                >
+                  <div className="text-purple-400 group-hover:text-purple-300 font-semibold text-lg mb-1">🎤</div>
+                  <div className="text-purple-400 group-hover:text-purple-300 text-xs font-medium">Top Artists</div>
+                </button>
+                
+                <button
+                  onClick={() => navigate('/playlists')}
+                  className="bg-green-500/20 hover:bg-green-500/30 rounded-lg p-3 border border-green-500/30 hover:border-green-500/50 transition-all duration-200 group"
+                >
+                  <div className="text-green-400 group-hover:text-green-300 font-semibold text-lg mb-1">📁</div>
+                  <div className="text-green-400 group-hover:text-green-300 text-xs font-medium">Playlists</div>
+                </button>
               </div>
             </div>
 
             {/* Action Buttons */}
             <div className="space-y-4">
-              {/* Spotify Connect Button */}
+              {/* Spotify Analytics Buttons - Full Width */}
               
+              {/* Divider */}
+              <div className="border-t border-gray-600/50 my-6"></div>
 
               {/* Update Profile Button */}
               <button
                 onClick={() => navigate('/update-profile')}
-                className="w-full bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 font-medium py-3 px-6 rounded-lg transition-all duration-200 border border-blue-500/30"
+                className="w-full bg-gray-600/50 hover:bg-gray-600/70 text-gray-300 hover:text-white font-medium py-3 px-6 rounded-lg transition-all duration-200 border border-gray-600/50"
               >
                 <div className="flex items-center justify-center space-x-2">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -195,10 +212,10 @@ const Profile = () => {
                   </svg>
                 </div>
                 <div>
-                  <h3 className="text-sm font-medium text-white mb-1">Account Status</h3>
+                  <h3 className="text-sm font-medium text-white mb-1">Spotify Analytics</h3>
                   <p className="text-xs text-gray-300 leading-relaxed">
-                    Your account is active and ready to create amazing playlists. 
-                    Connect your Spotify account to start building your music collection.
+                    Explore your music listening habits with detailed analytics from Spotify. 
+                    View your top tracks, discover your favorite artists, and browse your playlists.
                   </p>
                 </div>
               </div>

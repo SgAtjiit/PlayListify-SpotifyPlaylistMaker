@@ -6,6 +6,9 @@ import LoginPage from './components/LoginPage'
 import Profile from './components/Profile'
 import Entry from './components/Entry'
 import UpdateProfile from './components/UpdateProfile'
+import TopTracks from './components/TopTracks'
+import TopArtists from './components/TopArtists'
+import UserPlaylists from './components/UserPlaylists'
 import ProtectedRoute from './components/ProtectedRoute'
 import PublicRoute from './components/PublicRoute'
 import { Toaster } from 'react-hot-toast'
@@ -64,6 +67,33 @@ const App = () => {
             element={
               <ProtectedRoute>
                 <UpdateProfile />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route 
+            path='/top-tracks' 
+            element={
+              <ProtectedRoute>
+                <TopTracks />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route 
+            path='/top-artists' 
+            element={
+              <ProtectedRoute>
+                <TopArtists />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route 
+            path='/playlists' 
+            element={
+              <ProtectedRoute>
+                <UserPlaylists />
               </ProtectedRoute>
             }
           />
