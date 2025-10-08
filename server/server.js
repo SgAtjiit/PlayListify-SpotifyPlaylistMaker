@@ -44,7 +44,9 @@ const SCOPES =
 
 let access_token = "";
 let refresh_token = "";
-
+app.get("/",(req,res)=>{
+  res.send("Server is Live !!")
+})
 // STEP 1: Redirect user to Spotify for login
 app.get("/login", (req, res) => {
   const authUrl =
