@@ -38,7 +38,45 @@ const AppFunction = () => {
     }
   };
 
-  const checkAvailability = async () => {
+//   const checkAvailability = async () => {
+//     if (!tsongname.trim()) {
+//       toast.error("Enter a song name first!!");
+//       return;
+//     }
+    
+//     // Check if Spotify is connected before searching
+//     if (!isSpotifyConnected) {
+//       toast.error("Please connect your Spotify account first!");
+//       navigate('/authSpotify');
+//       return;
+//     }
+
+//     try {
+//       const res = await axios.post(`${url}/search`, {
+//         songname: tsongname,
+//       });
+//       setsimisongs(res.data.tracksFound);
+//       setIsAvailable(true);
+//       if (res.data.tracksFound.length === 0) {
+//         toast.error("No similar songs found!");
+//       } else {
+//         toast.success("Songs found! Choose one to add.");
+//       }
+//     } catch (error) {
+//       toast.error("Oops some error occurred!!");
+//       console.log("An error occurred!!", error);
+//       // If token expired, redirect to auth
+//       if (error.response?.status === 401) {
+//         toast.error("Spotify session expired. Please reconnect!");
+//         localStorage.removeItem('spotify_access_token');
+//         localStorage.removeItem('spotify_refresh_token');
+//         navigate('/authSpotify');
+//       }
+//     }
+//   };
+
+  // Disable normal Add button, only allow from similar songs list
+    const checkAvailability = async () => {
     if (!tsongname.trim()) {
       toast.error("Enter a song name first!!");
       return;
@@ -52,9 +90,23 @@ const AppFunction = () => {
     }
 
     try {
+      // Get the token from localStorage
+      const token = localStorage.getItem('spotify_access_token');
+      
+      if (!token) {
+        toast.error('Please reconnect your Spotify account');
+        navigate('/authSpotify');
+        return;
+      }
+
       const res = await axios.post(`${url}/search`, {
         songname: tsongname,
+      }, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
       });
+      
       setsimisongs(res.data.tracksFound);
       setIsAvailable(true);
       if (res.data.tracksFound.length === 0) {
@@ -70,12 +122,11 @@ const AppFunction = () => {
         toast.error("Spotify session expired. Please reconnect!");
         localStorage.removeItem('spotify_access_token');
         localStorage.removeItem('spotify_refresh_token');
+        setIsSpotifyConnected(false);
         navigate('/authSpotify');
       }
     }
   };
-
-  // Disable normal Add button, only allow from similar songs list
   const addToQueue = () => {
     if (!isSpotifyConnected) {
       toast.error("Please connect your Spotify account first!");
@@ -102,7 +153,50 @@ const AppFunction = () => {
     setSongs(songs.filter((_, i) => i !== index));
   };
 
-  const handleSubmit = async () => {
+//   const handleSubmit = async () => {
+//     if (songs.length === 0 || !playlistName) {
+//       toast.error("Enter at least one song name and a playlist name first!!");
+//       return;
+//     }
+
+//     // Check if Spotify is connected before creating playlist
+//     if (!isSpotifyConnected) {
+//       toast.error("Please connect your Spotify account first!");
+//       navigate('/authSpotify');
+//       return;
+//     }
+
+//     setIsLoading(true);
+//     try {
+//       for (let song of songs) {
+//         await axios.post(`${url}/searchAndAdd`, {
+//           songname: song,
+//           playlistName: playlistName,
+//         });
+//       }
+//       toast.success(`Successfully added ${songs.length} songs to playlist!`);
+//       setSongs([]);
+//       setPlaylistName("");
+//       setSongname("");
+//       setTSongname("");
+//     } catch (error) {
+//       toast.error("Oops an error occurred!!");
+//       console.log(`An error occurred: ${error}`);
+//       // If token expired, redirect to auth
+//       if (error.response?.status === 401) {
+//         toast.error("Spotify session expired. Please reconnect!");
+//         localStorage.removeItem('spotify_access_token');
+//         localStorage.removeItem('spotify_refresh_token');
+//         setIsSpotifyConnected(false);
+//         navigate('/authSpotify');
+//       }
+//     } finally {
+//       setIsLoading(false);
+//     }
+//   };
+
+  // Check if Spotify is authenticated
+    const handleSubmit = async () => {
     if (songs.length === 0 || !playlistName) {
       toast.error("Enter at least one song name and a playlist name first!!");
       return;
@@ -115,12 +209,24 @@ const AppFunction = () => {
       return;
     }
 
+    const token = localStorage.getItem('spotify_access_token');
+    
+    if (!token) {
+      toast.error('Please reconnect your Spotify account');
+      navigate('/authSpotify');
+      return;
+    }
+
     setIsLoading(true);
     try {
       for (let song of songs) {
         await axios.post(`${url}/searchAndAdd`, {
           songname: song,
           playlistName: playlistName,
+        }, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
         });
       }
       toast.success(`Successfully added ${songs.length} songs to playlist!`);
@@ -143,8 +249,6 @@ const AppFunction = () => {
       setIsLoading(false);
     }
   };
-
-  // Check if Spotify is authenticated
   const checkSpotifyAuth = () => {
     const token = localStorage.getItem('spotify_access_token');
     setIsSpotifyConnected(!!token);

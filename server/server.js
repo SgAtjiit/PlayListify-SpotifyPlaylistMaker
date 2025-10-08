@@ -152,13 +152,68 @@ app.get("/userInfo", async (req, res) => {
   }
 })
 
+// app.post("/search", async (req, res) => {
+//   const token = getAuthToken(req);
+  
+//   if(!token) {
+//     return res.status(401).json({ 
+//       status: "fail", 
+//       message: "Authentication required",
+//       requiresAuth: true 
+//     });
+//   }
+  
+//   const songname = req.body.songname || "shape of you"
+//   try {
+//     const user = await getUserProfile(token);
+//     const searchRes = await axios.get("https://api.spotify.com/v1/search", {
+//       headers: { Authorization: `Bearer ${token}` },
+//       params: { q: songname, type: "track", limit: 5 },
+//     });
+    
+//     if (searchRes.data.tracks.items.length === 0) {
+//       return res.status(404).json({
+//         status: "fail",
+//         message: `No songs found for "${songname}"`,
+//         tracksFound: []
+//       });
+//     }
+
+//     const tracks = searchRes.data.tracks.items;
+//     let array = []
+//     for(const item of tracks){
+//       array.push({
+//         "song":item.name,
+//         "artist":item.artists[0].name,
+//         "image":item.album.images.length > 0 ? item.album.images[0].url : null
+//       })
+//     }
+//     return res.status(200).json({"status":"success","tracksFound":array})
+
+//   } catch (error) {
+//     console.log(`An error occured:${error}`)
+    
+//     // Handle token expiration
+//     if (error.response?.status === 401) {
+//       return res.status(401).json({ 
+//         status: "fail", 
+//         message: "Token expired",
+//         requiresAuth: true 
+//       });
+//     }
+    
+//     return res.status(500).json({"status":"fail","message":"An error occured"})
+//   }
+// })
+
+// STEP 4: Search for song + add to playlist
 app.post("/search", async (req, res) => {
   const token = getAuthToken(req);
   
   if(!token) {
     return res.status(401).json({ 
       status: "fail", 
-      message: "Authentication required",
+      message: "Authentication required - no token found",
       requiresAuth: true 
     });
   }
@@ -191,7 +246,7 @@ app.post("/search", async (req, res) => {
     return res.status(200).json({"status":"success","tracksFound":array})
 
   } catch (error) {
-    console.log(`An error occured:${error}`)
+    console.log(`An error occurred:${error}`)
     
     // Handle token expiration
     if (error.response?.status === 401) {
@@ -202,9 +257,94 @@ app.post("/search", async (req, res) => {
       });
     }
     
-    return res.status(500).json({"status":"fail","message":"An error occured"})
+    return res.status(500).json({"status":"fail","message":"An error occurred"})
   }
 })
+// app.post("/searchAndAdd", async (req, res) => {
+//   const token = getAuthToken(req);
+  
+//   if (!token) {
+//     return res.status(401).json({ 
+//       status: "fail", 
+//       message: "Authentication required",
+//       requiresAuth: true 
+//     });
+//   }
+  
+//   const songName = req.body.songname || "shape of you";
+//   const playlistName = req.body.playlistName || "My API Playlist";
+ 
+//   try {
+//     // Fetch user info
+//     const user = await getUserProfile(token);
+
+//     const searchRes = await axios.get("https://api.spotify.com/v1/search", {
+//       headers: { Authorization: `Bearer ${token}` },
+//       params: { q: songName, type: "track", limit: 1 },
+//     });
+
+//     if (searchRes.data.tracks.items.length === 0) {
+//       return res.status(404).json({
+//         status: "fail",
+//         message: `No songs found for "${songName}"`
+//       });
+//     }
+
+//     const track = searchRes.data.tracks.items[0];
+//     const trackUri = track.uri;
+//     console.log(`🎵 Found: ${track.name} by ${track.artists[0].name}`);
+
+//     // 2️⃣ Check if playlist exists
+//     const playlistsRes = await axios.get("https://api.spotify.com/v1/me/playlists", {
+//       headers: { Authorization: `Bearer ${token}` },
+//       params: { limit: 50 },
+//     });
+
+//     let playlist = playlistsRes.data.items.find((p) => p.name === playlistName);
+
+//     // 3️⃣ Create playlist if it doesn't exist
+//     if (!playlist) {
+//       const createRes = await axios.post(
+//         `https://api.spotify.com/v1/users/${user.id}/playlists`,
+//         {
+//           name: playlistName,
+//           description: "Songs added via Spotify API",
+//           public: false,
+//         },
+//         { headers: { Authorization: `Bearer ${token}` } }
+//       );
+
+//       playlist = createRes.data;
+//       console.log(`🆕 Created new playlist: ${playlist.name}`);
+//     } else {
+//       console.log(`📁 Found existing playlist: ${playlist.name}`);
+//     }
+
+//     // 4️⃣ Add track to playlist
+//     await axios.post(
+//       `https://api.spotify.com/v1/playlists/${playlist.id}/tracks`,
+//       { uris: [trackUri] },
+//       { headers: { Authorization: `Bearer ${token}` } }
+//     );
+
+//     console.log("✅ Song added successfully!");
+
+//     return res.status(200).json({"status":"success","message":"Song was added succesfully!!"});
+//   } catch (err) {
+//     console.error("⚠️ Error:", err.response?.data || err.message);
+    
+//     // Handle token expiration
+//     if (err.response?.status === 401) {
+//       return res.status(401).json({ 
+//         status: "fail", 
+//         message: "Token expired",
+//         requiresAuth: true 
+//       });
+//     }
+    
+//     res.status(500).json({"status":"fail","message":"An error occured !!"});
+//   }
+// });
 
 // STEP 4: Search for song + add to playlist
 app.post("/searchAndAdd", async (req, res) => {
@@ -213,7 +353,7 @@ app.post("/searchAndAdd", async (req, res) => {
   if (!token) {
     return res.status(401).json({ 
       status: "fail", 
-      message: "Authentication required",
+      message: "Authentication required - no token found",
       requiresAuth: true 
     });
   }
@@ -276,7 +416,7 @@ app.post("/searchAndAdd", async (req, res) => {
 
     console.log("✅ Song added successfully!");
 
-    return res.status(200).json({"status":"success","message":"Song was added succesfully!!"});
+    return res.status(200).json({"status":"success","message":"Song was added successfully!!"});
   } catch (err) {
     console.error("⚠️ Error:", err.response?.data || err.message);
     
@@ -289,10 +429,9 @@ app.post("/searchAndAdd", async (req, res) => {
       });
     }
     
-    res.status(500).json({"status":"fail","message":"An error occured !!"});
+    res.status(500).json({"status":"fail","message":"An error occurred !!"});
   }
 });
-
 // STEP 5: Get User's Top Items (Tracks or Artists)
 app.get("/top/:type", async (req, res) => {
   const token = getAuthToken(req);
