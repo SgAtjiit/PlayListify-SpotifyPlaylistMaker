@@ -20,7 +20,8 @@ const AppFunction = () => {
   const [userAvatar, setUserAvatar] = useState("");
   const [isAvailable, setIsAvailable] = useState(false);
   const [isSpotifyConnected, setIsSpotifyConnected] = useState(false);
-  const [componentLoading, setComponentLoading] = useState(false)
+  const [componentLoading, setComponentLoading] = useState(true);
+  const [tokensFetched, setTokensFetched] = useState(false);
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -57,6 +58,7 @@ const AppFunction = () => {
       
       if (!token) {
         toast.error('Please reconnect your Spotify account');
+        setIsSpotifyConnected(false);
         navigate('/authSpotify');
         return;
       }
@@ -65,7 +67,8 @@ const AppFunction = () => {
         songname: tsongname,
       }, {
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
       });
       
@@ -77,15 +80,18 @@ const AppFunction = () => {
         toast.success("Songs found! Choose one to add.");
       }
     } catch (error) {
-      toast.error("Oops some error occurred!!");
-      console.log("An error occurred!!", error);
-      // If token expired, redirect to auth
+      console.error("Search error:", error);
+      
       if (error.response?.status === 401) {
         toast.error("Spotify session expired. Please reconnect!");
         localStorage.removeItem('spotify_access_token');
         localStorage.removeItem('spotify_refresh_token');
         setIsSpotifyConnected(false);
         navigate('/authSpotify');
+      } else if (error.response?.status === 500) {
+        toast.error("Server error. Please try again or reconnect Spotify.");
+      } else {
+        toast.error("Search failed. Please try again!");
       }
     }
   };
@@ -133,6 +139,7 @@ const AppFunction = () => {
     
     if (!token) {
       toast.error('Please reconnect your Spotify account');
+      setIsSpotifyConnected(false);
       navigate('/authSpotify');
       return;
     }
@@ -145,25 +152,29 @@ const AppFunction = () => {
           playlistName: playlistName,
         }, {
           headers: {
-            'Authorization': `Bearer ${token}`
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
           }
         });
       }
-      toast.success(`Successfully added ${songs.length} songs to playlist!`);
+      toast.success(`Successfully added ${songs.length} songs to playlist "${playlistName}"!`);
       setSongs([]);
       setPlaylistName("");
       setSongname("");
       setTSongname("");
     } catch (error) {
-      toast.error("Oops an error occurred!!");
-      console.log(`An error occurred: ${error}`);
-      // If token expired, redirect to auth
+      console.error("Playlist creation error:", error);
+      
       if (error.response?.status === 401) {
         toast.error("Spotify session expired. Please reconnect!");
         localStorage.removeItem('spotify_access_token');
         localStorage.removeItem('spotify_refresh_token');
         setIsSpotifyConnected(false);
         navigate('/authSpotify');
+      } else if (error.response?.status === 500) {
+        toast.error("Server error. Please try again or reconnect Spotify.");
+      } else {
+        toast.error("Failed to create playlist. Please try again!");
       }
     } finally {
       setIsLoading(false);
@@ -172,24 +183,73 @@ const AppFunction = () => {
 
   const checkSpotifyAuth = () => {
     const token = localStorage.getItem('spotify_access_token');
+    console.log('🔍 Checking Spotify auth, token found:', !!token);
     setIsSpotifyConnected(!!token);
     return !!token;
   };
 
+  const fetchSpotifyTokens = async () => {
+    console.log('🔄 Fetching Spotify tokens from server...');
+    try {
+      const response = await axios.get(`${url}/getTokens`);
+      const { access_token, refresh_token } = response.data;
+      
+      console.log('✅ Tokens received from server:', {
+        access_token: access_token ? 'present' : 'missing',
+        refresh_token: refresh_token ? 'present' : 'missing'
+      });
+      
+      if (access_token) {
+        localStorage.setItem('spotify_access_token', access_token);
+        console.log('💾 Access token saved to localStorage');
+      }
+      
+      if (refresh_token) {
+        localStorage.setItem('spotify_refresh_token', refresh_token);
+        console.log('💾 Refresh token saved to localStorage');
+      }
+      
+      setIsSpotifyConnected(true);
+      setTokensFetched(true);
+      toast.success('Spotify connected successfully!');
+      
+      // Verify tokens are actually saved
+      const savedToken = localStorage.getItem('spotify_access_token');
+      console.log('🔍 Verification - token in localStorage:', !!savedToken);
+      
+    } catch (error) {
+      console.error('❌ Failed to fetch tokens:', error);
+      toast.error('Failed to connect Spotify!');
+      setIsSpotifyConnected(false);
+      setTokensFetched(true);
+    }
+  };
+
   useEffect(() => {
+    console.log('🚀 AppFunction useEffect triggered');
+    
     // Check if user came from Spotify auth
     const urlParams = new URLSearchParams(window.location.search);
     const authSuccess = urlParams.get('auth');
     
+    console.log('🔍 Auth success from URL:', authSuccess);
+    
     if (authSuccess === 'success') {
+      console.log('✅ Auth success detected, fetching tokens...');
       // Fetch tokens from backend
       fetchSpotifyTokens();
       // Clean up URL
       window.history.replaceState({}, document.title, window.location.pathname);
+    } else {
+      // If not coming from auth, just check existing tokens
+      console.log('📋 No auth success, checking existing tokens...');
+      checkSpotifyAuth();
+      setTokensFetched(true);
     }
 
     // Firebase auth state listener
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      console.log('👤 Firebase user state changed:', !!currentUser);
       setUser(currentUser);
       setUname(currentUser?.displayName || currentUser?.email || 'User');
       
@@ -198,59 +258,30 @@ const AppFunction = () => {
         const avatarUrl = getAvatarUrl(currentUser);
         setUserAvatar(avatarUrl);
       }
-      setComponentLoading(false); // Set loading to false after user is set
+      setComponentLoading(false);
     });
-
-    // Check Spotify authentication status
-    const isAuthenticated = checkSpotifyAuth();
-    
-    // If user is not authenticated with Spotify, redirect to auth
-    if (!isAuthenticated && !authSuccess) {
-      toast.info("Please connect your Spotify account to continue");
-      navigate('/authSpotify');
-    }
 
     return () => unsubscribe();
   }, [navigate]);
 
-  const fetchSpotifyTokens = async () => {
-    try {
-      const response = await axios.get(`${url}/getTokens`);
-      const { access_token, refresh_token } = response.data;
-      
-      localStorage.setItem('spotify_access_token', access_token);
-      if (refresh_token) {
-        localStorage.setItem('spotify_refresh_token', refresh_token);
-      }
-      
-      setIsSpotifyConnected(true);
-      console.log('✅ Spotify tokens stored successfully');
-      toast.success('Spotify connected successfully!');
-    } catch (error) {
-      console.error('Failed to fetch tokens:', error);
-      toast.error('Failed to connect Spotify!');
-      setIsSpotifyConnected(false);
-      navigate('/authSpotify');
+  // Separate useEffect to handle redirection after tokens are fetched
+  useEffect(() => {
+    if (tokensFetched && !isSpotifyConnected && !componentLoading && user) {
+      console.log('⚠️ No Spotify connection detected, showing info message');
+      toast.info("Please connect your Spotify account to continue");
+      // Don't auto-redirect, let user click connect button
     }
-  };
+  }, [tokensFetched, isSpotifyConnected, componentLoading, user, navigate]);
 
   // Check if user is authenticated
-  if (!user) {
+  if (!user || componentLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-black flex items-center justify-center">
         <div className="bg-gray-800/40 backdrop-blur-lg rounded-2xl p-8 shadow-2xl border border-gray-700/50 text-center">
           <div className="w-16 h-16 border-4 border-green-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-300 text-xl">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-   if (componentLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-black flex items-center justify-center">
-        <div className="bg-gray-800/40 backdrop-blur-lg rounded-2xl p-8 shadow-2xl border border-gray-700/50 text-center">
-          <div className="w-16 h-16 border-4 border-green-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-300 text-xl">Loading App...</p>
+          <p className="text-gray-300 text-xl">
+            {!user ? 'Loading User...' : 'Loading App...'}
+          </p>
         </div>
       </div>
     );
@@ -341,7 +372,8 @@ const AppFunction = () => {
           </div>
         )}
 
-        {/* Main Content - Responsive */}
+
+        {/* Main Content - Same as before */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 lg:py-12">
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 lg:gap-8">
             {/* Add Songs Section */}
