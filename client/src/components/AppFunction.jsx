@@ -268,7 +268,7 @@ const AppFunction = () => {
   useEffect(() => {
     if (tokensFetched && !isSpotifyConnected && !componentLoading && user) {
       console.log('⚠️ No Spotify connection detected, showing info message');
-      toast.info("Please connect your Spotify account to continue");
+      toast.error("Please connect your Spotify account to continue");
       // Don't auto-redirect, let user click connect button
     }
   }, [tokensFetched, isSpotifyConnected, componentLoading, user, navigate]);
