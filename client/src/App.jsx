@@ -13,6 +13,7 @@ import ProtectedRoute from './components/ProtectedRoute'
 import PublicRoute from './components/PublicRoute'
 import { Toaster } from 'react-hot-toast'
 import Footer from './components/Footer'
+import ManagePlaylist from './components/ManagePlaylist'
 
 const App = () => {
   return (
@@ -94,6 +95,14 @@ const App = () => {
             element={
               <ProtectedRoute>
                 <UserPlaylists />
+              </ProtectedRoute>
+            }
+          />
+          <Route 
+            path='/manage-playlists' 
+            element={
+              <ProtectedRoute>
+                <ManagePlaylist/>
               </ProtectedRoute>
             }
           />

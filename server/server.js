@@ -583,6 +583,123 @@ app.get("/top/:type", async (req, res) => {
 });
 
 // STEP 7: Get User's Playlists
+// app.get("/playlists", async (req, res) => {
+//   const token = getAuthToken(req);
+  
+//   if (!token) {
+//     return res.status(401).json({ 
+//       status: "fail", 
+//       message: "Authentication required",
+//       requiresAuth: true 
+//     });
+//   }
+
+//   const { limit = 20, offset = 0 } = req.query;
+
+//   // Validate limit parameter
+//   const limitNum = parseInt(limit);
+//   if (isNaN(limitNum) || limitNum < 1 || limitNum > 50) {
+//     return res.status(400).json({
+//       status: "fail",
+//       message: "Invalid limit. Must be between 1 and 50",
+//       providedLimit: limit
+//     });
+//   }
+
+//   // Validate offset parameter
+//   const offsetNum = parseInt(offset);
+//   if (isNaN(offsetNum) || offsetNum < 0) {
+//     return res.status(400).json({
+//       status: "fail",
+//       message: "Invalid offset. Must be 0 or greater",
+//       providedOffset: offset
+//     });
+//   }
+
+//   try {
+//     console.log(`🎵 Fetching user playlists with limit: ${limitNum}, offset: ${offsetNum}`);
+
+//     const playlistsRes = await axios.get("https://api.spotify.com/v1/me/playlists", {
+//       headers: { Authorization: `Bearer ${token}` },
+//       params: { 
+//         limit: limitNum,
+//         offset: offsetNum
+//       },
+//     });
+
+//     const data = playlistsRes.data;
+    
+//     // Format the response
+//     const formattedPlaylists = data.items.map(playlist => ({
+//       id: playlist.id,
+//       name: playlist.name,
+//       description: playlist.description,
+//       collaborative: playlist.collaborative,
+//       public: playlist.public,
+//       owner: {
+//         id: playlist.owner.id,
+//         display_name: playlist.owner.display_name,
+//         external_url: playlist.owner.external_urls?.spotify
+//       },
+//       tracks: {
+//         total: playlist.tracks.total,
+//         href: playlist.tracks.href
+//       },
+//       images: playlist.images,
+//       image: playlist.images.length > 0 ? playlist.images[0].url : null,
+//       external_url: playlist.external_urls.spotify,
+//       uri: playlist.uri,
+//       snapshot_id: playlist.snapshot_id
+//     }));
+
+//     console.log(`✅ Found ${formattedPlaylists.length} playlists`);
+
+//     return res.status(200).json({
+//       status: "success",
+//       pagination: {
+//         total: data.total,
+//         limit: data.limit,
+//         offset: data.offset,
+//         next: data.next,
+//         previous: data.previous,
+//         href: data.href
+//       },
+//       playlists: formattedPlaylists,
+//       raw_spotify_response: process.env.NODE_ENV === 'development' ? data : undefined
+//     });
+
+//   } catch (error) {
+//     console.error(`❌ Error fetching playlists:`, error.response?.data || error.message);
+    
+//     // Handle token expiration
+//     if (error.response?.status === 401) {
+//       return res.status(401).json({ 
+//         status: "fail", 
+//         message: "Token expired",
+//         requiresAuth: true 
+//       });
+//     }
+
+//     // Handle insufficient permissions
+//     if (error.response?.status === 403) {
+//       return res.status(403).json({
+//         status: "fail",
+//         message: "Insufficient permissions. The 'playlist-read-private' scope is required.",
+//         requiredScope: "playlist-read-private"
+//       });
+//     }
+    
+//     return res.status(500).json({
+//       status: "fail",
+//       message: "Failed to fetch playlists",
+//       error: process.env.NODE_ENV === 'development' ? error.message : undefined
+//     });
+//   }
+// });
+// ...existing code...
+
+// REMOVE the earlier "/playlists" route (STEP 7) entirely and keep only this safe one:
+
 app.get("/playlists", async (req, res) => {
   const token = getAuthToken(req);
   
@@ -596,7 +713,6 @@ app.get("/playlists", async (req, res) => {
 
   const { limit = 20, offset = 0 } = req.query;
 
-  // Validate limit parameter
   const limitNum = parseInt(limit);
   if (isNaN(limitNum) || limitNum < 1 || limitNum > 50) {
     return res.status(400).json({
@@ -606,7 +722,6 @@ app.get("/playlists", async (req, res) => {
     });
   }
 
-  // Validate offset parameter
   const offsetNum = parseInt(offset);
   if (isNaN(offsetNum) || offsetNum < 0) {
     return res.status(400).json({
@@ -628,29 +743,33 @@ app.get("/playlists", async (req, res) => {
     });
 
     const data = playlistsRes.data;
-    
-    // Format the response
-    const formattedPlaylists = data.items.map(playlist => ({
-      id: playlist.id,
-      name: playlist.name,
-      description: playlist.description,
-      collaborative: playlist.collaborative,
-      public: playlist.public,
-      owner: {
-        id: playlist.owner.id,
-        display_name: playlist.owner.display_name,
-        external_url: playlist.owner.external_urls?.spotify
-      },
-      tracks: {
-        total: playlist.tracks.total,
-        href: playlist.tracks.href
-      },
-      images: playlist.images,
-      image: playlist.images.length > 0 ? playlist.images[0].url : null,
-      external_url: playlist.external_urls.spotify,
-      uri: playlist.uri,
-      snapshot_id: playlist.snapshot_id
-    }));
+
+    const formattedPlaylists = data.items.map(p => {
+      const imagesArray = Array.isArray(p.images) ? p.images : [];
+      const firstImage = imagesArray.length > 0 ? imagesArray[0].url : null;
+
+      return {
+        id: p.id,
+        name: p.name,
+        description: p.description,
+        collaborative: p.collaborative,
+        public: p.public,
+        owner: {
+          id: p.owner?.id || null,
+          display_name: p.owner?.display_name || "Unknown",
+          external_url: p.owner?.external_urls?.spotify || null
+        },
+        tracks: {
+          total: p.tracks?.total ?? 0,
+          href: p.tracks?.href || null
+        },
+        images: imagesArray,
+        image: firstImage,
+        external_url: p.external_urls?.spotify || null,
+        uri: p.uri,
+        snapshot_id: p.snapshot_id
+      };
+    });
 
     console.log(`✅ Found ${formattedPlaylists.length} playlists`);
 
@@ -669,9 +788,8 @@ app.get("/playlists", async (req, res) => {
     });
 
   } catch (error) {
-    console.error(`❌ Error fetching playlists:`, error.response?.data || error.message);
-    
-    // Handle token expiration
+    console.error(`❌ Error fetching playlists (raw):`, error.response?.data || error.message);
+
     if (error.response?.status === 401) {
       return res.status(401).json({ 
         status: "fail", 
@@ -679,8 +797,6 @@ app.get("/playlists", async (req, res) => {
         requiresAuth: true 
       });
     }
-
-    // Handle insufficient permissions
     if (error.response?.status === 403) {
       return res.status(403).json({
         status: "fail",
@@ -688,15 +804,16 @@ app.get("/playlists", async (req, res) => {
         requiredScope: "playlist-read-private"
       });
     }
-    
+
     return res.status(500).json({
       status: "fail",
       message: "Failed to fetch playlists",
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      error: process.env.NODE_ENV === 'development' ? (error.response?.data || error.message) : undefined
     });
   }
 });
 
+// ...existing code...
 // STEP 8: Get specific playlist tracks
 app.get("/playlist/:playlistId/tracks", async (req, res) => {
   const token = getAuthToken(req);
@@ -767,7 +884,152 @@ app.get("/playlist/:playlistId/tracks", async (req, res) => {
     });
   }
 });
+// ...existing code...
+// ...existing code...
+// ...existing code...
 
+/**
+ * POST /manage-playlist
+ * Body:
+ * {
+ *   action: "create" | "update" | "add-tracks" | "remove-tracks" | "unfollow",
+ *   playlistId?: string,
+ *   name?: string,
+ *   description?: string,
+ *   public?: boolean,
+ *   trackUris?: string[]   // for add-tracks / remove-tracks
+ * }
+ */
+app.post("/manage-playlist", async (req, res) => {
+  const token = getAuthToken(req);
+  if (!token) {
+    return res.status(401).json({
+      status: "fail",
+      message: "Authentication required",
+      requiresAuth: true
+    });
+  }
+
+  const { action } = req.body;
+  if (!action) {
+    return res.status(400).json({ status: "fail", message: "Missing action" });
+  }
+
+  try {
+    switch (action) {
+      case "create": {
+        const { name, description = "", public: isPublic = false } = req.body;
+        if (!name) {
+          return res.status(400).json({ status: "fail", message: "Playlist name required" });
+        }
+        const user = await getUserProfile(token);
+        const createRes = await axios.post(
+          `https://api.spotify.com/v1/users/${user.id}/playlists`,
+            {
+              name,
+              description,
+              public: isPublic
+            },
+            { headers: { Authorization: `Bearer ${token}` } }
+        );
+
+        return res.status(201).json({
+          status: "success",
+            action: "create",
+            playlist: {
+              id: createRes.data.id,
+              name: createRes.data.name,
+              description: createRes.data.description,
+              public: createRes.data.public,
+              image: createRes.data.images?.[0]?.url || null,
+              external_url: createRes.data.external_urls?.spotify
+            }
+        });
+      }
+
+      case "update": {
+        const { playlistId, name, description, public: isPublic } = req.body;
+        if (!playlistId) {
+          return res.status(400).json({ status: "fail", message: "playlistId required" });
+        }
+        if (!name && description === undefined && isPublic === undefined) {
+          return res.status(400).json({ status: "fail", message: "Nothing to update" });
+        }
+        await axios.put(
+          `https://api.spotify.com/v1/playlists/${playlistId}`,
+          {
+            ...(name !== undefined ? { name } : {}),
+            ...(description !== undefined ? { description } : {}),
+            ...(isPublic !== undefined ? { public: isPublic } : {})
+          },
+          { headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } }
+        );
+        return res.status(200).json({ status: "success", action: "update", playlistId });
+      }
+
+      case "add-tracks": {
+        const { playlistId, trackUris } = req.body;
+        if (!playlistId) return res.status(400).json({ status: "fail", message: "playlistId required" });
+        if (!Array.isArray(trackUris) || trackUris.length === 0) {
+          return res.status(400).json({ status: "fail", message: "trackUris array required" });
+        }
+        await axios.post(
+          `https://api.spotify.com/v1/playlists/${playlistId}/tracks`,
+          { uris: trackUris },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        return res.status(200).json({ status: "success", action: "add-tracks", playlistId, added: trackUris.length });
+      }
+
+      case "remove-tracks": {
+        const { playlistId, trackUris } = req.body;
+        if (!playlistId) return res.status(400).json({ status: "fail", message: "playlistId required" });
+        if (!Array.isArray(trackUris) || trackUris.length === 0) {
+          return res.status(400).json({ status: "fail", message: "trackUris array required" });
+        }
+        await axios.delete(
+          `https://api.spotify.com/v1/playlists/${playlistId}/tracks`,
+          {
+            headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+            data: {
+              tracks: trackUris.map(uri => ({ uri }))
+            }
+          }
+        );
+        return res.status(200).json({ status: "success", action: "remove-tracks", playlistId, removed: trackUris.length });
+      }
+
+      case "unfollow": {
+        const { playlistId } = req.body;
+        if (!playlistId) return res.status(400).json({ status: "fail", message: "playlistId required" });
+        await axios.delete(
+          `https://api.spotify.com/v1/playlists/${playlistId}/followers`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        return res.status(200).json({ status: "success", action: "unfollow", playlistId });
+      }
+
+      default:
+        return res.status(400).json({ status: "fail", message: `Unknown action: ${action}` });
+    }
+  } catch (error) {
+    if (error.response?.status === 401) {
+      return res.status(401).json({
+        status: "fail",
+        message: "Token expired",
+        requiresAuth: true
+      });
+    }
+    return res.status(500).json({
+      status: "fail",
+      message: "Playlist management failed",
+      action,
+      error: process.env.NODE_ENV === 'development' ? (error.response?.data || error.message) : undefined
+    });
+  }
+});
+
+// ...existing code...
 app.listen(PORT, () =>
   console.log(`App running!!`)
 );
