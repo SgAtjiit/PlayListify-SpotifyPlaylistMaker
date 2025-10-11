@@ -14,6 +14,7 @@ import PublicRoute from './components/PublicRoute'
 import { Toaster } from 'react-hot-toast'
 import Footer from './components/Footer'
 import ManagePlaylist from './components/ManagePlaylist'
+import NewAppFunction from './components/NewAppFunction'
 
 const App = () => {
   return (
@@ -50,6 +51,15 @@ const App = () => {
             element={
               <ProtectedRoute>
                 <AppFunction />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route 
+            path='/new-app' 
+            element={
+              <ProtectedRoute>
+                <NewAppFunction />
               </ProtectedRoute>
             }
           />
